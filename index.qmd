@@ -1,74 +1,83 @@
 ---
-title: "BEyond Rapidsurvey Hainich"
+title: "BEyond Rapidsurvey Schorfheide"
 ---
 
-## Plotauswahl
 
 
-Planung der "Rapidsurvey" Plots im Hainich für die Feldsaison 2024.
-Anforderung an die Plot-Locations:
+```{r}
+#| echo: false
+#| include: false
+#| message: false
+#| warning: false
 
-- Außerhalb der Exploratorienfläche
-- auf Muschelkalk (GUEK300_Geologie)
-- auf Grasland (DLM)
-
-Auf diesen Flächen wurden zufällig 100 Punkte erzeugt. 50 davon sind die geplanten rapidsample plots (rsp).
-Die anderen 50 dienen als Ersatz-Plots (add), falls ein rsp nicht in Frage kommt (z.B. nicht begehbar oder falsch erzeugt durch Fehler in den Geodaten).
-
-
-## Katasterinformationen
-
-Zu jedem Plot wurde die Katasternummer aus folgenden Quellen bezogen:
-
-Für Thüringen über den Inspire Atom Feed heruntergeladen:
-
-[https://geoportal.geoportal-th.de/gaialight-th/_apps/atomfeedexplorer/?#feed=https%3A%2F%2Fgeoportal.geoportal-th.de%2Fdienste%2Fatom_th_alkis%3Ftype%3Ddataset%26id%3D33c5e445-e8eb-426b-a174-d77284d76dc9](https://geoportal.geoportal-th.de/gaialight-th/_apps/atomfeedexplorer/?#feed=https%3A%2F%2Fgeoportal.geoportal-th.de%2Fdienste%2Fatom_th_alkis%3Ftype%3Ddataset%26id%3D33c5e445-e8eb-426b-a174-d77284d76dc9)
-
-Für Hessen wurde die Katatsterinformation via WFS Dienst und QGIS in die Datenpunkte geschrieben.
-[https://inspire-hessen.de/ows/services/org.2.bb5a6d08-22bd-48f4-b522-876a052abe8a_wfs](https://inspire-hessen.de/ows/services/org.2.bb5a6d08-22bd-48f4-b522-876a052abe8a_wfs)
+library(tidyverse)
+library(sf)
+library(mapview)
+library(gt)
+```
 
 
-## Verschneidung mit Schutzgebieten
-
-Zu jedem Plot wurde auserdem Ermittelt ob er sich in einem Schutzgebiet befindet.
-Die Natura2000 Flächen wurden dafür bezogen von der EEA:
-[https://www.eea.europa.eu/en/datahub/datahubitem-view/6fc8ad2d-195d-40f4-bdec-576e7d1268e4](https://www.eea.europa.eu/en/datahub/datahubitem-view/6fc8ad2d-195d-40f4-bdec-576e7d1268e4)
-
-
-
-
-```{r setup}
+```{r}
 #| echo: false
 #| message: false
+#| warning: false
 
-library(sf)
-library(gt)
-library(mapview)
-mapviewOptions(basemaps = c("OpenStreetMap.DE"))
+dlm = read_sf("~/beyond/be_rapidsurvey_schorfheide/valid_grasslands.gpkg")
+dlm_crs = st_crs(dlm)
 
-natura = read_sf("data/natura2000_hai.gpkg")
-natura = st_transform(natura, 25832)
-rapidsurvey = read_sf("data/rapidsurvey_kat_nat.gpkg")
-rapidsurvey = st_transform(rapidsurvey, 25832)
+explo_sch = read_sf("~/beyond/data/Basisdaten/studyarea/geometrien_exploratorien.gpkg", layer = "area_sch")
+explo_sch = st_transform(explo_sch, dlm_crs)
+
+kreise = read_sf("~/beyond/be_rapidsurvey_schorfheide/germany_gadm_l2.gpkg")
+kreise = kreise |> filter(NAME_2 != "Oberhavel") |> st_transform(dlm_crs)
+
+naturraum = read_sf("~/data/germany/germany_naturraeume.gpkg")
+naturraum = naturraum |> filter(ZUS %in% c("D04", "D03")) |> st_transform(dlm_crs)
+
+schutzgebiete = read_sf("~/data/germany/germany_naturschutzgebiete.gpkg")
+schutzgebiete = st_transform(schutzgebiete, dlm_crs) |> st_zm()
+schutzgebiete = schutzgebiete[kreise,]
+
+
+rapidsurvey = read_sf("~/beyond/be_rapidsurvey_schorfheide/rapidsurvey_plots.gpkg")
+rapidsurvey_alternative = read_sf("~/beyond/be_rapidsurvey_schorfheide/rapidsurvey_plots_add.gpkg")
+
 ```
 
 
-Die Mehrfachnennung mancher Plots in der Tabelle kommen von Überlappenden Natura2000 Flächen.
+
+
 
 
 ```{r}
+#| message: false
+#| warning: false
 #| echo: false
 
-rapidsurvey |> cbind(st_coordinates(rapidsurvey)) |> st_drop_geometry() |> gt()
+mapviewOptions(basemaps = c("OpenStreetMap.DE","CartoDB.Positron","Esri.WorldImagery"))
+
+#mapview(dlm, col.regions = "lightgreen", layer.name = "DLM Grasslands") +
+mapview(explo_sch, col.regions = "lightyellow", layer.name = "Exploratorium")+
+  mapview(schutzgebiete, col.regions = "lightblue")+
+  mapview(rapidsurvey, col.regions = "black") + 
+  mapview(rapidsurvey_alternative, col.regions = "white")
 
 ```
 
-Trotz der Nennung und Darstellung werden wir keine Feldaufnahmen auf dem TÜP Ohrdruf - Jonastal durchführen.
+
+## Rapidsurvey plots
 
 ```{r}
 #| echo: false
-rapidsurvey$typ = substr(rapidsurvey$plot_id, 1, 3)
-mapview(natura, alpha = 0.3 ) + mapview(rapidsurvey, zcol = "typ")
+rapidsurvey |> gt()
+```
+
+
+## Alternative plots
+
+```{r}
+#| echo: false
+rapidsurvey_alternative |> gt()
 ```
 
 

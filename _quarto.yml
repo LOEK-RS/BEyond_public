@@ -2,9 +2,13 @@ project:
   type: website
   output-dir: docs
 
+
 website:
   title: "BEyond"
-  
+  navbar:
+    left: 
+      - text: Überblick
+        file: index.qmd
 
 
 format:
