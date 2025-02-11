@@ -45,7 +45,28 @@ rapidsurvey_alternative = read_sf("~/beyond/be_rapidsurvey_schorfheide/rapidsurv
 ```
 
 
+```{r patch-kataster}
+#| echo: false
 
+kat1 = read_sf("~/beyond/be_rapidsurvey_schorfheide/rapidsurvey_plots_kataster.gpkg") |> 
+  select(plotID, id) |> st_drop_geometry() |> rename(kataster = id)
+kat2 = read_sf("~/beyond/be_rapidsurvey_schorfheide/rapidsurvey_plots_add_kataster.gpkg") |> 
+  select(plotID, id) |> st_drop_geometry() |> rename(kataster = id)
+
+
+
+
+
+
+
+rapidsurvey = left_join(rapidsurvey, kat1, by = "plotID") |> dplyr::relocate(plotID, kataster)
+rapidsurvey_alternative = left_join(rapidsurvey_alternative, kat2, by = "plotID") |> dplyr::relocate(plotID, kataster)
+
+
+
+
+
+```
 
 
 
@@ -65,6 +86,14 @@ mapview(explo_sch, col.regions = "lightyellow", layer.name = "Exploratorium")+
 ```
 
 
+
+
+
+
+
+
+
+
 ## Rapidsurvey plots
 
 ```{r}
@@ -79,5 +108,12 @@ rapidsurvey |> gt()
 #| echo: false
 rapidsurvey_alternative |> gt()
 ```
+
+
+
+
+
+
+
 
 
